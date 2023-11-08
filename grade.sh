@@ -42,9 +42,19 @@ else
     cat $compile_output 
 fi
 
+set +e
 javac -cp "$CPATH" "TestListExamples.java" "$FILE1"
-java -cp "$CPATH" "org.junit.runner.JUnitCore" "TestListExamples"> test_output.txt 2>&1
-
-# tests_run=$(grep -oP 'Tests run: \K\d+' "test_output.txt")
-# failures=$(grep -oP 'Failures: \K\d+' "test_output.txt")
-# echo $tests_run
+java -cp "$CPATH" "org.junit.runner.JUnitCore" "TestListExamples" > test_output.txt 2>&1
+tests_run=$(grep 'Tests run:' "test_output.txt" | awk '{print $3}'| tr -d ',')
+failures=$(grep 'Failures:' "test_output.txt" | awk '{print $5}')
+if [ "$(echo "$failures/$tests_run" | bc)" = 1 ];
+then
+    echo "your grade is 0"
+    echo "------------"
+    cat "test_output.txt"
+else
+    grade=$(awk "BEGIN { printf \"%.2f\", (1 - $failures / $tests_run) * 100 }")
+    echo "Your grade is $grade"
+    echo "------------"
+    cat "test_output.txt"
+fi
