@@ -1,4 +1,3 @@
-set -e
 CPATH='.:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar'
 
 rm -rf student-submission
@@ -16,6 +15,7 @@ echo 'Finished cloning'
 # Then, add here code to compile and run, and do any post-processing of the
 # tests
 FILE="student-submission/ListExamples.java"
+GRADE=$((0))
 if [[ -e "$FILE" ]]; 
 then
     if [[ "$FILE" == *.java ]]; 
@@ -37,24 +37,24 @@ FILE1="ListExamples.java"
 javac "$FILE1" > compile_output.log 2>&1
 if [ $? -eq 0 ]; then
     echo "Compilation successful."
+    GRADE=$((GRADE + 20))
+    javac -cp "$CPATH" "TestListExamples.java" > different_test_output.txt 2>&1
+    java -cp "$CPATH" "org.junit.runner.JUnitCore" "TestListExamples" > test_output.txt 2>&1
+    if [ $? -eq 0 ]; then
+        echo "your grade is 100"
+        echo "------------"
+        cat "test_output.txt"
+    else
+        tests_run=$(grep 'Tests run:' "test_output.txt" | awk '{print $3}'| tr -d ',')
+        failures=$(grep 'Failures:' "test_output.txt" | awk '{print $5}')
+        TEMP=$((1 - $failures / $tests_run))
+        GRADE=$(($TEMP* 80 +20))
+        echo "Your grade is $GRADE"
+        echo "------------"
+        cat "test_output.txt"
+    fi
 else
     echo "Compilation failed. Check compile_output.log for details."
-    cat $compile_output 
-fi
-
-set +e
-javac -cp "$CPATH" "TestListExamples.java" "$FILE1"
-java -cp "$CPATH" "org.junit.runner.JUnitCore" "TestListExamples" > test_output.txt 2>&1
-tests_run=$(grep 'Tests run:' "test_output.txt" | awk '{print $3}'| tr -d ',')
-failures=$(grep 'Failures:' "test_output.txt" | awk '{print $5}')
-if [ "$(echo "$failures/$tests_run" | bc)" = 1 ];
-then
-    echo "your grade is 0"
-    echo "------------"
-    cat "test_output.txt"
-else
-    grade=$(awk "BEGIN { printf \"%.2f\", (1 - $failures / $tests_run) * 100 }")
-    echo "Your grade is $grade"
-    echo "------------"
-    cat "test_output.txt"
+    echo "Your grade is 0"
+    cat compile_output.log
 fi
